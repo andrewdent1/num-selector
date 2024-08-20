@@ -12,14 +12,20 @@
             height: 100vh;
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
+            margin: 0;
         }
 
         .container {
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             background: white;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px; /* Limit the maximum width */
         }
 
         button {
@@ -29,12 +35,14 @@
             font-size: 18px;
             cursor: pointer;
             border-radius: 5px;
+            flex-shrink: 0; /* Prevent buttons from shrinking */
         }
 
         #status {
             margin-top: 20px;
             font-size: 16px;
             color: #555;
+            text-align: center;
         }
 
         #timer {
@@ -42,16 +50,18 @@
             font-size: 20px;
             font-weight: bold;
             color: #f00;
+            text-align: center;
         }
 
-        #master-btn:disabled {
+        #master-btn:disabled, button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
         }
 
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
+        @media (max-width: 500px) {
+            button {
+                width: 100%; /* Make buttons fill the container width on small screens */
+            }
         }
     </style>
 </head>
@@ -60,9 +70,9 @@
 <div class="container">
     <h2 id="selected-number">Selected Number: 1</h2>
     
+    <button id="master-btn">Master</button>
     <button id="up-btn">Up</button>
     <button id="down-btn">Down</button>
-    <button id="master-btn">Master</button>
     
     <p id="status">Press the Master Button 3 times to confirm the number selection.</p>
     
@@ -126,59 +136,60 @@
         const hasRunToday = localStorage.getItem('hasRunToday');
         if (hasRunToday === 'true') {
             disableButtons();
-        } else {
-            startCountdown();
-
-            // Function to update the displayed number
-            function updateNumberDisplay() {
-                selectedNumberElement.textContent = `Selected Number: ${number}`;
-            }
-
-            // Increase number when 'Up' is pressed
-            upButton.addEventListener('click', () => {
-                if (targetNumber === null && number < 20) {
-                    number++;
-                    updateNumberDisplay();
-                }
-            });
-
-            // Decrease number when 'Down' is pressed
-            downButton.addEventListener('click', () => {
-                if (targetNumber === null && number > 1) {
-                    number--;
-                    updateNumberDisplay();
-                }
-            });
-
-            // Handle 'Master' button clicks
-            masterButton.addEventListener('click', () => {
-                if (targetNumber === null) {
-                    masterConfirmClicks++;
-                    if (masterConfirmClicks < 3) {
-                        statusElement.textContent = `Press the Master Button ${3 - masterConfirmClicks} more times to confirm.`;
-                    } else {
-                        targetNumber = number;
-                        statusElement.textContent = `Number confirmed! Press the Master Button ${targetNumber} times to finish.`;
-                        masterConfirmClicks = 0;
-
-                        // Disable up and down buttons after confirmation
-                        upButton.disabled = true;
-                        downButton.disabled = true;
-                    }
-                } else {
-                    masterClickCount++;
-                    if (masterClickCount < targetNumber) {
-                        statusElement.textContent = `${masterClickCount}/${targetNumber} Master button presses.`;
-                    } else {
-                        statusElement.textContent = "Task Completed!";
-                        masterButton.disabled = true;
-
-                        // Mark the program as run today
-                        localStorage.setItem('hasRunToday', 'true');
-                    }
-                }
-            });
         }
+
+        // Start the countdown in any case (whether the user has run the program today or not)
+        startCountdown();
+
+        // Function to update the displayed number
+        function updateNumberDisplay() {
+            selectedNumberElement.textContent = `Selected Number: ${number}`;
+        }
+
+        // Increase number when 'Up' is pressed
+        upButton.addEventListener('click', () => {
+            if (targetNumber === null && number < 20) {
+                number++;
+                updateNumberDisplay();
+            }
+        });
+
+        // Decrease number when 'Down' is pressed
+        downButton.addEventListener('click', () => {
+            if (targetNumber === null && number > 1) {
+                number--;
+                updateNumberDisplay();
+            }
+        });
+
+        // Handle 'Master' button clicks
+        masterButton.addEventListener('click', () => {
+            if (targetNumber === null) {
+                masterConfirmClicks++;
+                if (masterConfirmClicks < 3) {
+                    statusElement.textContent = `Press the Master Button ${3 - masterConfirmClicks} more times to confirm.`;
+                } else {
+                    targetNumber = number;
+                    statusElement.textContent = `Number confirmed! Press the Master Button ${targetNumber} times to finish.`;
+                    masterConfirmClicks = 0;
+
+                    // Disable up and down buttons after confirmation
+                    upButton.disabled = true;
+                    downButton.disabled = true;
+                }
+            } else {
+                masterClickCount++;
+                if (masterClickCount < targetNumber) {
+                    statusElement.textContent = `${masterClickCount}/${targetNumber} Master button presses.`;
+                } else {
+                    statusElement.textContent = "Task Completed!";
+                    masterButton.disabled = true;
+
+                    // Mark the program as run today
+                    localStorage.setItem('hasRunToday', 'true');
+                }
+            }
+        });
     });
 </script>
 </body>
