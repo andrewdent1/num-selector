@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Button Tracker</title>
+    <title>Button Tracker with Timer</title>
     <style>
         body {
             display: flex;
@@ -11,10 +11,15 @@
             align-items: center;
             height: 100vh;
             font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
         }
 
         .container {
             text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         button {
@@ -23,11 +28,30 @@
             margin: 10px 0;
             font-size: 18px;
             cursor: pointer;
+            border-radius: 5px;
         }
 
         #status {
             margin-top: 20px;
             font-size: 16px;
+            color: #555;
+        }
+
+        #timer {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #f00;
+        }
+
+        #master-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -37,68 +61,125 @@
     <h2 id="selected-number">Selected Number: 1</h2>
     
     <button id="up-btn">Up</button>
-    <button id="master-btn">Master</button>
     <button id="down-btn">Down</button>
+    <button id="master-btn">Master</button>
     
     <p id="status">Press the Master Button 3 times to confirm the number selection.</p>
+    
+    <p id="timer">Time until reset: Calculating...</p>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-    let number = 1;
-    let targetNumber = null;
-    let masterClickCount = 0;
-    let masterConfirmClicks = 0;
+        let number = 1;
+        let targetNumber = null;
+        let masterClickCount = 0;
+        let masterConfirmClicks = 0;
+        
+        const selectedNumberElement = document.getElementById('selected-number');
+        const statusElement = document.getElementById('status');
+        const upButton = document.getElementById('up-btn');
+        const downButton = document.getElementById('down-btn');
+        const masterButton = document.getElementById('master-btn');
+        const timerElement = document.getElementById('timer');
 
-    const selectedNumberElement = document.getElementById('selected-number');
-    const statusElement = document.getElementById('status');
-    const upButton = document.getElementById('up-btn');
-    const downButton = document.getElementById('down-btn');
-    const masterButton = document.getElementById('master-btn');
-
-    // Function to update the displayed number
-    function updateNumberDisplay() {
-        selectedNumberElement.textContent = `Selected Number: ${number}`;
-    }
-
-    // Increase number when 'Up' is pressed
-    upButton.addEventListener('click', () => {
-        if (targetNumber === null && number < 20) {
-            number++;
-            updateNumberDisplay();
+        // Get today's date and calculate time until next midnight
+        function getTimeUntilMidnight() {
+            const now = new Date();
+            const tomorrow = new Date();
+            tomorrow.setHours(24, 0, 0, 0); // Set to midnight of the next day
+            return tomorrow - now;
         }
-    });
 
-    // Decrease number when 'Down' is pressed
-    downButton.addEventListener('click', () => {
-        if (targetNumber === null && number > 1) {
-            number--;
-            updateNumberDisplay();
-        }
-    });
+        // Start countdown timer
+        function startCountdown() {
+            const timeRemaining = getTimeUntilMidnight();
 
-    // Handle 'Master' button clicks
-    masterButton.addEventListener('click', () => {
-        if (targetNumber === null) {
-            masterConfirmClicks++;
-            if (masterConfirmClicks < 3) {
-                statusElement.textContent = `Press the Master Button ${3 - masterConfirmClicks} more times to confirm.`;
+            const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+
+            timerElement.textContent = `Time until reset: ${hours}h ${minutes}m ${seconds}s`;
+
+            if (timeRemaining <= 0) {
+                resetLocalStorage();
+                window.location.reload();
             } else {
-                targetNumber = number;
-                statusElement.textContent = `Number confirmed! Press the Master Button ${targetNumber} times to finish.`;
-                masterConfirmClicks = 0;
+                setTimeout(startCountdown, 1000);
             }
+        }
+
+        // Reset localStorage at midnight
+        function resetLocalStorage() {
+            localStorage.removeItem('hasRunToday');
+        }
+
+        // Disable buttons if the user has run the program today
+        function disableButtons() {
+            upButton.disabled = true;
+            downButton.disabled = true;
+            masterButton.disabled = true;
+            statusElement.textContent = "You've already run this program today. Please wait until tomorrow.";
+        }
+
+        // Check if the program has already been run today
+        const hasRunToday = localStorage.getItem('hasRunToday');
+        if (hasRunToday === 'true') {
+            disableButtons();
         } else {
-            masterClickCount++;
-            if (masterClickCount < targetNumber) {
-                statusElement.textContent = `${masterClickCount}/${targetNumber} Master button presses.`;
-            } else {
-                statusElement.textContent = "Task Completed!";
-                masterButton.disabled = true;
+            startCountdown();
+
+            // Function to update the displayed number
+            function updateNumberDisplay() {
+                selectedNumberElement.textContent = `Selected Number: ${number}`;
             }
+
+            // Increase number when 'Up' is pressed
+            upButton.addEventListener('click', () => {
+                if (targetNumber === null && number < 20) {
+                    number++;
+                    updateNumberDisplay();
+                }
+            });
+
+            // Decrease number when 'Down' is pressed
+            downButton.addEventListener('click', () => {
+                if (targetNumber === null && number > 1) {
+                    number--;
+                    updateNumberDisplay();
+                }
+            });
+
+            // Handle 'Master' button clicks
+            masterButton.addEventListener('click', () => {
+                if (targetNumber === null) {
+                    masterConfirmClicks++;
+                    if (masterConfirmClicks < 3) {
+                        statusElement.textContent = `Press the Master Button ${3 - masterConfirmClicks} more times to confirm.`;
+                    } else {
+                        targetNumber = number;
+                        statusElement.textContent = `Number confirmed! Press the Master Button ${targetNumber} times to finish.`;
+                        masterConfirmClicks = 0;
+
+                        // Disable up and down buttons after confirmation
+                        upButton.disabled = true;
+                        downButton.disabled = true;
+                    }
+                } else {
+                    masterClickCount++;
+                    if (masterClickCount < targetNumber) {
+                        statusElement.textContent = `${masterClickCount}/${targetNumber} Master button presses.`;
+                    } else {
+                        statusElement.textContent = "Task Completed!";
+                        masterButton.disabled = true;
+
+                        // Mark the program as run today
+                        localStorage.setItem('hasRunToday', 'true');
+                    }
+                }
+            });
         }
     });
-});
 </script>
 </body>
 </html>
